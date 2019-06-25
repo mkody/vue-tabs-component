@@ -39,6 +39,7 @@
                 default: () => ({
                     useUrlFragment: true,
                     disableStorage: false,
+                    defaultTabHash: null,
                 }),
             },
         },
@@ -46,6 +47,8 @@
         data: () => ({
             tabs: [],
             activeTabHash: '',
+            activeTabIndex: 0,
+            lastActiveTabHash: '',
         }),
 
         computed: {
@@ -75,6 +78,11 @@
                 }
             }
 
+            if(this.options.defaultTabHash !== null && this.findTab("#" + this.options.defaultTabHash)) {
+                this.selectTab("#" + this.options.defaultTabHash);
+                return;
+            }
+
             if (this.tabs.length) {
                 this.selectTab(this.tabs[0].hash);
             }
@@ -98,6 +106,12 @@
                 }
 
                 if (selectedTab.isDisabled) {
+                    event.preventDefault();
+                    return;
+                }
+
+                if (this.lastActiveTabHash === selectedTab.hash) {
+                    this.$emit('clicked', { tab: selectedTab });
                     return;
                 }
 
@@ -108,6 +122,9 @@
                 this.$emit('changed', { tab: selectedTab });
 
                 this.activeTabHash = selectedTab.hash;
+                this.activeTabIndex = this.getTabIndex(selectedTabHash);
+
+                this.lastActiveTabHash = this.activeTabHash = selectedTab.hash;
 
                 if (!this.options.disableStorage) {
                     expiringStorage.set(this.storageKey, selectedTab.hash, this.cacheLifetime);
@@ -137,6 +154,30 @@
                         return true;
                     });
                 }
+            },
+
+            getTabIndex(hash){
+            	const tab = this.findTab(hash);
+
+            	return this.tabs.indexOf(tab);
+            },
+
+			getTabHash(index){
+            	const tab = this.tabs.find(tab => this.tabs.indexOf(tab) === index);
+
+            	if (!tab) {
+					return;
+                }
+
+                return tab.hash;
+			},
+
+            getActiveTab(){
+            	return this.findTab(this.activeTabHash);
+            },
+
+			getActiveTabIndex() {
+            	return this.getTabIndex(this.activeTabHash);
             },
         },
     };
